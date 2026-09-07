@@ -8,4 +8,4 @@ resources:
 
 replicas:
   - name: gitops-demo
-    count: 3
+    count: 2
