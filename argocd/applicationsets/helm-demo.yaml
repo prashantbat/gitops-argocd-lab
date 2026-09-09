@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: helm-demo-preview
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+
+  generators:
+    - list:
+        elements:
+          - environment: dev
+          - environment: prod
+
+  template:
+    metadata:
+      name: 'helm-demo-appset-{{.environment}}'
+      labels:
+        app.kubernetes.io/name: helm-demo
+        poc: helm-applicationset
+        environment: '{{.environment}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/prashantbat/gitops-argocd-lab.git
+        targetRevision: main
+        path: charts/helm-demo
+        helm:
+          valueFiles:
+            - 'values/{{.environment}}.yaml'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'helm-demo-appset-{{.environment}}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
