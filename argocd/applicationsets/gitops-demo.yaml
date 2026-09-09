@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: gitops-demo
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+
+  generators:
+    - list:
+        elements:
+          - environment: dev
+          - environment: prod
+
+  template:
+    metadata:
+      name: 'gitops-demo-{{.environment}}'
+      labels:
+        app.kubernetes.io/name: gitops-demo
+        environment: '{{.environment}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/prashantbat/gitops-argocd-lab.git
+        targetRevision: main
+        path: 'apps/gitops-demo/overlays/{{.environment}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'gitops-demo-{{.environment}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+
+  # Protects generated Application CRs from removal when an environment is
+  # temporarily removed from the generator list.
+  syncPolicy:
+    applicationsSync: create-update
+    preserveResourcesOnDeletion: true
